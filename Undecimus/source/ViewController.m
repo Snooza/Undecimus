@@ -59,6 +59,8 @@
 
 @implementation ViewController
 static ViewController *sharedController = nil;
+static NSMutableString *output = nil;
+static struct timeval last_output = { 0, 0 };
 
 #define PROGRESS(msg, btnenbld, tbenbld) do { \
         LOG("PROGRESS: %@", msg); \
@@ -1827,6 +1829,8 @@ void exploit(mach_port_t tfp0,
         // NOTICE(@"Jailbreak succeeded, but still needs a few minutes to respring.", false, false);
         exploit(tfp0, kernel_base);
         PROGRESS(NSLocalizedString(@"Jailbroken", nil), false, false);
+        sleep(1);
+        [self finishOutput];
     });
 }
 
@@ -1888,6 +1892,30 @@ void exploit(mach_port_t tfp0,
 // This intentionally returns nil if called before it's been created by a proper init
 +(ViewController*)sharedController {
     return sharedController;
+}
+
+-(void)appendTextToOutput:(NSString *)text {
+    struct timeval now;
+    
+    if (gettimeofday(&now, NULL) == ERR_SUCCESS) {
+        if (output == nil)
+            output = [NSMutableString new];
+        [output appendString:text];
+        // Had to throttle this or all updates stop
+        if (now.tv_sec != last_output.tv_sec || now.tv_usec - last_output.tv_usec > 25000) {
+            _outputView.text = output;
+            [_outputView scrollRangeToVisible:NSMakeRange(output.length - 1, 1)];
+        }
+        last_output = now;
+    }
+}
+
+-(void)finishOutput {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        self.outputView.text = output;
+//        [self.outputView scrollRangeToVisible:NSMakeRange(output.length - 1, 1)];
+        [self.outputView scrollRectToVisible:CGRectMake(1, -1, 1, 1) animated:NO];
+    });
 }
 
 - (id)initWithCoder:(NSCoder *)aDecoder {

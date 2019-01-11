@@ -19,6 +19,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #import "utils.h"
+#import "SettingsTableViewController.h" // for LOG_FILE
 
 extern char **environ;
 
@@ -675,6 +676,25 @@ NSString *getBundledResources() {
     NSString *bundledResourcesKey = @"BundledResources";
     NSString *bundledResources = [infoDictionary objectForKey:bundledResourcesKey];
     return bundledResources;
+}
+
+int open_logs() {
+    int old_logfd = logfd;
+    int newfd = open(LOG_FILE, O_WRONLY|O_CREAT);
+    if (newfd > 0) {
+        init_file(LOG_FILE, 501, 0644);
+    }
+    logfd = newfd;
+    if (old_logfd > 0)
+        close(old_logfd);
+    return logfd;
+}
+
+void reset_logs() {
+    if (access(LOG_FILE, F_OK) == ERR_SUCCESS) {
+        unlink(LOG_FILE);
+        open_logs();
+    }
 }
 
 __attribute__((constructor))

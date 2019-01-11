@@ -453,8 +453,7 @@
 }
 
 - (IBAction)tappedOnCleanDiagnosticsData:(id)sender {
-    RESET_LOGS();
-    START_LOGGING();
+    reset_logs();
     NOTICE(@"Cleaned diagnostics data.", false, false);
 }
 

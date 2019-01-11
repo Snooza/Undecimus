@@ -12,6 +12,7 @@
 #import <sys/stat.h>
 
 #define system(x) _system(x)
+extern int logfd;
 
 #define DEFAULT_VERSION_STRING "Hacked"
 
@@ -91,6 +92,8 @@ NSInteger recommendedRestartSupport(void);
 NSInteger recommendedRespringSupport(void);
 bool daemonIsLoaded(char *daemonID);
 NSString *getBundledResources(void);
+int open_logs(void);
+void reset_logs(void);
 
 extern NSData *lastSystemOutput;
 

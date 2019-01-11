@@ -11,12 +11,46 @@
 #include "SettingsTableViewController.h"
 #include "utils.h"
 
+extern int outputpipe[2];
+extern bool outputpipesPresent;
+extern int orig_stderr;
+extern int orig_stdout;
+
 @interface AppDelegate ()
 
 @end
 
 @implementation AppDelegate
 
+- (void)handlePipe {
+    char s[0x1001];
+    
+    s[1] = '\0';
+    NSMutableString *line = [NSMutableString new];
+    
+    ssize_t nread;
+    while ((nread = read(outputpipe[0], s, 0x1000)) > 0) {
+        write(orig_stdout, s, nread);
+        if (logfd > 0) {
+            if (write(logfd, s, nread) != nread) {
+                write(orig_stdout, "error writing to logfile\n", 26);
+            }
+        }
+        s[nread] = '\0';
+        [line appendString:@(s)];
+        if (strstr(s, "\n") != NULL) {
+            [ViewController.sharedController performSelectorOnMainThread:@selector(appendTextToOutput:) withObject:[line copy] waitUntilDone:NO];
+            [line setString:@""];
+        }
+    }
+}
+
+- (BOOL)application:(UIApplication *)application willFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    if (outputpipesPresent) {
+        [self performSelectorInBackground:@selector(handlePipe) withObject:nil];
+    }
+    return true;
+}
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     [self initPrefs];
